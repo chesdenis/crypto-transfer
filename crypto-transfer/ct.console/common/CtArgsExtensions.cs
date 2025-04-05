@@ -11,6 +11,22 @@ public static class CtArgsExtensions
         
         return Reported(retVal, nameof(fileExt));
     }
+    
+    public static string GetDirectoryToShare(this string[] args)
+    {
+        var dirToShare = args.FirstOrDefault(arg => arg.StartsWith("--dir-to-share="))?.Split('=')[1];
+        var retVal = !string.IsNullOrEmpty(dirToShare) ? dirToShare : throw new ArgumentException("Directory to share is not specified");
+        
+        return Reported(retVal, nameof(dirToShare));
+    }
+    
+    public static string GetOutput(this string[] args)
+    {
+        var output = args.FirstOrDefault(arg => arg.StartsWith("--output="))?.Split('=')[1];
+        var retVal = !string.IsNullOrEmpty(output) ? output : throw new ArgumentException("Output is not specified");
+        
+        return Reported(retVal, nameof(output));
+    }
 
     public static CtMode GetMode(this string[] args)
     {
@@ -61,7 +77,7 @@ public static class CtArgsExtensions
             throw new FileNotFoundException($"Encryption key file not found: {encryptionKeyFilePath}");
         }
 
-        var encryptionKey = File.ReadAllText(encryptionKeyFilePath).Trim();
+        var encryptionKey = encryptionKeyFilePath.Load<string>();
 
         if (string.IsNullOrEmpty(encryptionKey))
         {

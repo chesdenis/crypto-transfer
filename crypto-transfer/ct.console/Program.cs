@@ -2,6 +2,7 @@
 
 using ct.console;
 using ct.console.common;
+using ct.console.infrastructure;
 using ct.console.model;
 using ct.console.services;
 
@@ -16,10 +17,12 @@ switch (mode)
         var encryptionKey = CtCryptoExtensions.GenerateRandomKey(32);
         encryptionKey.AsBase64String().Dump("enc.key");
         
-        var fileMapBuilder = new FileMapBuilder(new FileIterator());
+        var fileMapBuilder = new CtFileMapBuilder(new CtFileIterator());
         var extensionFilter = args.GetFileExtensionFilter();
         var chunkSize = args.GetChunkSize();
-        var chunkMap = fileMapBuilder.Build(extensionFilter, chunkSize, encryptionKey);
+        var directoryToShare = args.GetDirectoryToShare();
+        var chunkMap = fileMapBuilder.Build(extensionFilter, directoryToShare, chunkSize, encryptionKey);
+        chunkMap.Dump(args.GetChunkMapPath());
         var server = new CtServer(chunkMap, encryptionKey.AsBase64String());
         server.Run(args);
         

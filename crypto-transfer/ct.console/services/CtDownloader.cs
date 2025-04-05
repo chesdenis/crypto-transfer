@@ -16,6 +16,7 @@ public class CtDownloader
     {
         var serverUrl = args.GetServerUrl();
         var chunkMap = await args.LoadChunkMap();
+        var outputFolder = args.GetOutput();
 
         using var httpClient = new HttpClient();
 
@@ -48,7 +49,7 @@ public class CtDownloader
 
                         await using var responseStream = await response.Content.ReadAsStreamAsync();
 
-                        string outputPath = Path.Combine(AppContext.BaseDirectory, partName);
+                        string outputPath = Path.Combine(outputFolder, partName);
 
                         var bufferSize = 8192 * 1024;
 

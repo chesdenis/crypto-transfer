@@ -1,12 +1,14 @@
-namespace ct.console.services;
+namespace ct.console.infrastructure;
 
-public class FileIterator
+public class CtFileIterator
 {
-    public IEnumerable<string> WalkFilePath(string extensionFilter)
+    public IEnumerable<string> WalkFilePath(string extensionFilter, string directoryToShare)
     {
-        var currentDirectory = AppContext.BaseDirectory;
-        var files = Directory.GetFiles(currentDirectory, $"*.{extensionFilter}");
+        Console.WriteLine($"Searching for files with extension {extensionFilter} here {directoryToShare}");
+        var files = Directory.GetFiles(directoryToShare, $"*.{extensionFilter}");
         var totalFiles = files.Length; 
+        
+        Console.WriteLine($"Found {totalFiles} files");
         
         var currentIndex = 0;
 
