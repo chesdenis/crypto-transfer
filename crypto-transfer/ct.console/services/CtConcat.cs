@@ -1,9 +1,8 @@
 using ct.console.common;
-using ct.console.model;
 
 namespace ct.console.services;
 
-public class CtConcat()
+public class CtConcat
 {
     public async Task Concat(string[] args)
     {

@@ -1,4 +1,4 @@
-namespace ct.console;
+namespace ct.console.model;
 
 public enum CtMode
 {

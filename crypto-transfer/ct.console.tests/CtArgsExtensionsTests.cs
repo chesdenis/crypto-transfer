@@ -1,8 +1,7 @@
-using System;
-using System.IO;
-using Xunit;
+using ct.console.common;
+using ct.console.model;
 
-namespace ct.console.common.tests
+namespace ct.console.tests
 {
     public class CtArgsExtensionsTests
     {

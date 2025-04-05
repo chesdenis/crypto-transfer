@@ -1,3 +1,5 @@
+using ct.console.model;
+
 namespace ct.console.common;
 
 public static class CtArgsExtensions
