@@ -54,4 +54,28 @@ public static class CtCryptoExtensions
         var result = new { IV = Convert.ToBase64String(iv), Data = Convert.ToBase64String(encrypted) };
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(result)));
     }
+    
+    public static async Task<byte[]> DecryptAsync(this byte[] data, string keyAsString)
+    {
+        var key = Convert.FromBase64String(keyAsString);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+
+        // Extract the IV from the encrypted data
+        var ivLength = aes.BlockSize / 8;
+        var iv = data.Take(ivLength).ToArray();
+        var encryptedData = data.Skip(ivLength).ToArray();
+
+        aes.IV = iv;
+
+        using var memoryStream = new MemoryStream();
+        await using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
+        {
+            await cryptoStream.WriteAsync(encryptedData);
+        }
+
+        return memoryStream.ToArray();
+    }
+
 }

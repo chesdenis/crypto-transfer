@@ -49,6 +49,26 @@ public static class CtArgsExtensions
 
         return Reported(retVal, nameof(serverUrl));
     }
+    
+    public static string GetEncryptionKey()
+    {
+        const string encryptionKeyFilePath = "enc.key";
+
+        if (!File.Exists(encryptionKeyFilePath))
+        {
+            throw new FileNotFoundException($"Encryption key file not found: {encryptionKeyFilePath}");
+        }
+
+        var encryptionKey = File.ReadAllText(encryptionKeyFilePath).Trim();
+
+        if (string.IsNullOrEmpty(encryptionKey))
+        {
+            throw new ArgumentException("Encryption key file is empty.");
+        }
+
+        return encryptionKey;
+    }
+
 
     private static T Reported<T>(this T data, string parameterName)
     {

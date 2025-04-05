@@ -9,22 +9,13 @@ public class CtDownloader
 {
     private static readonly ConcurrentDictionary<string, double> ProgressMap = new(); // Shared progress tracker
 
-    private static readonly ConcurrentDictionary<string, string> DownloadStatus = new(); // To display status (e.g., Done, Error)
-    
+    private static readonly ConcurrentDictionary<string, string>
+        DownloadStatus = new(); // To display status (e.g., Done, Error)
+
     public async Task Run(string[] args)
     {
         var serverUrl = args.GetServerUrl();
-        var chunkMapFilePath = Path.Combine(AppContext.BaseDirectory, "chunkMap.json");
-
-        if (!File.Exists(chunkMapFilePath))
-        {
-            Console.WriteLine($"Chunk map file not found: {chunkMapFilePath}");
-            return;
-        }
-
-        string chunkMapJson = await File.ReadAllTextAsync(chunkMapFilePath);
-        var chunkMap = JsonSerializer.Deserialize<Dictionary<string, CtPart>>(chunkMapJson) ??
-                       new Dictionary<string, CtPart>();
+        var chunkMap = await args.LoadChunkMap();
 
         using var httpClient = new HttpClient();
 

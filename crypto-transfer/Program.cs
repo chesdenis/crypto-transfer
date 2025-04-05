@@ -16,7 +16,6 @@ switch (mode)
         var encryptionKey = CtCryptoExtensions.GenerateRandomKey(32);
         encryptionKey.AsBase64String().Dump("enc.key");
         
-        // run server mode with args
         var fileMapBuilder = new FileMapBuilder(new FileIterator());
         var extensionFilter = args.GetFileExtensionFilter();
         var chunkSize = args.GetChunkSize();
@@ -31,6 +30,9 @@ switch (mode)
         
         break;
     case CtMode.Combiner:
+        var concat = new CtConcat();
+        await concat.Concat(args);
+        
         break;
     default:
         throw new ArgumentOutOfRangeException();
