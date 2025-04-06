@@ -30,6 +30,11 @@ public class CtServer(IDictionary<string, CtPart> chunkMap, string encryptionKey
         });
         
         var app = builder.Build();
+
+        app.MapGet("/ping", async context =>
+        {
+            await context.Response.WriteAsync("pong");
+        });
         
         app.MapGet("/download/{partId}", async context =>
         {
