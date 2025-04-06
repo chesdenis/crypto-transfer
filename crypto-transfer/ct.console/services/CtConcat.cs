@@ -7,7 +7,7 @@ public class CtConcat
     public async Task Concat(string[] args)
     {
         var chunkMap = await args.LoadChunkMap();
-        var encryptionKey = CtArgsExtensions.GetEncryptionKey();
+        var encryptionKey = args.GetEncryptionKey();
 
         // Ensure the target directory exists
         var fileList = chunkMap.Values.Select(s => s.FilePath).Distinct().ToList();
@@ -31,15 +31,15 @@ public class CtConcat
             {
                 Console.WriteLine($"Writing chunk {chunk.Index} of {chunk.Total}...");
                 
-                if (!File.Exists(chunk.FilePath))
+                var partName =
+                    $"{Path.GetFileName(chunk.FilePath)}.part{chunk.Index}_of_{chunk.Total}.enc";
+                var partPath = Path.Combine(outputFolder, partName);
+                
+                if (!File.Exists(partPath))
                 {
                     Console.WriteLine($"Chunk not found: {chunk.FilePath}");
                     throw new FileNotFoundException($"Chunk not found: {chunk.FilePath}");
                 }
-                
-                var partName =
-                    $"{Path.GetFileName(chunk.FilePath)}.part{chunk.Index}_of_{chunk.Total}.enc";
-                var partPath = Path.Combine(outputFolder, partName);
                 
                 await using var chunkStream = File.OpenRead(partPath);
                 Console.WriteLine($"Chunk stream opened: {partName}");

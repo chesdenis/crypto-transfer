@@ -14,8 +14,15 @@ switch (mode)
 {
     case CtMode.Server:
         // Generate the random key
-        var encryptionKey = CtCryptoExtensions.GenerateRandomKey(32);
-        encryptionKey.AsBase64String().Dump("enc.key");
+        byte[] encryptionKey;
+        if (!args.ReuseEncryptionKey())
+        {
+            encryptionKey = CtCryptoExtensions.GenerateRandomKey(32);
+            encryptionKey.AsBase64String().Dump("enc.key");
+            Console.WriteLine("Encryption key was generated and saved to project root.");
+        }
+
+        encryptionKey =  Convert.FromBase64String(args.GetEncryptionKey());
         
         var fileMapBuilder = new CtFileMapBuilder(new CtFileIterator());
         var extensionFilter = args.GetFileExtensionFilter();

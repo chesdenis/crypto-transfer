@@ -67,17 +67,29 @@ public static class CtArgsExtensions
 
         return Reported(retVal, nameof(serverUrl));
     }
-    
-    public static string GetEncryptionKey()
-    {
-        const string encryptionKeyFilePath = "enc.key";
 
-        if (!File.Exists(encryptionKeyFilePath))
+    public static bool ReuseEncryptionKey(this string[] args)
+    {
+        var encKeyPath = args.FirstOrDefault(arg => arg.StartsWith("--key-path="))?.Split('=')[1];
+
+        if (File.Exists(encKeyPath))
         {
-            throw new FileNotFoundException($"Encryption key file not found: {encryptionKeyFilePath}");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public static string GetEncryptionKey(this string[] args)
+    {
+        var encKeyPath = args.FirstOrDefault(arg => arg.StartsWith("--enc-key="))?.Split('=')[1];
+        
+        if (!File.Exists(encKeyPath))
+        {
+            throw new FileNotFoundException($"Encryption key file not found: {encKeyPath}");
         }
 
-        var encryptionKey = encryptionKeyFilePath.Load<string>();
+        var encryptionKey = encKeyPath.Load<string>();
 
         if (string.IsNullOrEmpty(encryptionKey))
         {
