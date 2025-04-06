@@ -18,6 +18,14 @@ public class CtDownloader
         var chunkMap = await args.LoadChunkMap();
         var outputFolder = args.GetOutput();
 
+        foreach (var chunkKey in chunkMap.Keys)
+        {
+            ProgressMap[chunkKey] = 0; // Initialize chunk progress
+            DownloadStatus[chunkKey] = "Waiting"; // Update the status
+        }
+        
+        await ProgressMap.ReportProgress();
+
         using var httpClient = new HttpClient();
 
         using var semaphore = new SemaphoreSlim(args.GetThreadsCount());
