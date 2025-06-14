@@ -1,7 +1,7 @@
 using System.Text.Json;
-using ct.console.model;
+using ct.lib.model;
 
-namespace ct.console.common;
+namespace ct.lib.extensions;
 
 public static class CtFileExtensions
 {

@@ -1,4 +1,4 @@
-namespace ct.console.infrastructure;
+namespace ct.lib;
 
 public class CtFileIterator
 {

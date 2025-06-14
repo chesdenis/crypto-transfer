@@ -3,8 +3,10 @@
 using ct.console;
 using ct.console.common;
 using ct.console.infrastructure;
-using ct.console.model;
 using ct.console.services;
+using ct.lib;
+using ct.lib.extensions;
+using ct.lib.model;
 
 Console.WriteLine("Hello, World!");
 

@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ct.console.common;
+namespace ct.lib.extensions;
 
 public static class CtCryptoExtensions
 {

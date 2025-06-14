@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using ct.console.common;
+using ct.lib;
+using ct.lib.extensions;
 
 namespace ct.console.tests
 {
