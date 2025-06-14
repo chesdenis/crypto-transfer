@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 
-namespace ct.point;
+namespace ct.lib.logging;
 
-public class CtSpectreConsoleLoggerProvider(Action<LogLevel, string, string> logSink) : ILoggerProvider
+public class CtLoggerProvider(Action<LogLevel, string, string> logSink) : ILoggerProvider
 {
     public void Dispose()
     {
@@ -10,10 +10,10 @@ public class CtSpectreConsoleLoggerProvider(Action<LogLevel, string, string> log
 
     public ILogger CreateLogger(string categoryName)
     {
-        return new CtSpectreConsoleLogger(categoryName, logSink);
+        return new CtLogger(categoryName, logSink);
     }
 
-    private class CtSpectreConsoleLogger(string categoryName, Action<LogLevel, string, string> logSink) : ILogger
+    private class CtLogger(string categoryName, Action<LogLevel, string, string> logSink) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 

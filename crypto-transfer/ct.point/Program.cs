@@ -1,45 +1,35 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using ct.lib.extensions;
+using ct.lib.logging;
+using ct.lib.services;
 using ct.point;
 using Spectre.Console;
 
+var directoryToShare = args.GetDirectoryToShare();
+var extensionFilter = args.GetFileExtensionFilter();
 
-var leftLayout = new Layout("Left");
-var topRightLayout = new Layout("TopRight");
-var bottomRightLayout = new Layout("bottomRight");
+// to display of what we going to share and transfer
+var renderedFilesToShare = CtIoExtensions.GetFilesToShare(extensionFilter, directoryToShare)
+    .OrderBy(o=>o).ToArray();
+var renderedFoldersToShare = CtIoExtensions.GetFoldersToShare(extensionFilter, directoryToShare)
+    .OrderBy(o=>o).ToArray();
 
-// Ask for the user's favorite fruits
-// Ask for the user's favorite fruits
-var selectedFruits = AnsiConsole.Prompt(
-    new MultiSelectionPrompt<string>()
-        .Title("Select your favorite [green]fruits[/]:")
-        .PageSize(10)
-        .InstructionsText("[grey](Use [blue]<space>[/] to select, [green]<enter>[/] to accept)[/]")
-        .AddChoiceGroup("Tropical Fruits", new[] { "Banana", "Coconut", "Pineapple" })
-        .AddChoiceGroup("Berries", new[] { "Blueberry", "Blackcurrant", "Cloudberry" })
-        .AddChoiceGroup("Exotic Fruits", new[] { "Durian", "Rambutan", "Dragon Fruit" }));
+var leftLayout = new Layout();
 
-{
-    var table = new Table();
+var topRightLayout1 = new Layout();
+var topRightLayout2 = new Layout();
+var topRightLayout = new Layout("Items to share").SplitRows(topRightLayout1, topRightLayout2);;
 
-    table.AddColumn("Foo");
-    table.AddColumn(new TableColumn("Bar").Centered());
+var bottomRightLayout = new Layout("Clients & Progress");
 
-    foreach (var fruit in selectedFruits)
-    {
-        table.AddRow("Baz", "[green]Qux[/]");
-        table.AddRow(new Markup("[blue]Corgi[/]"), new Panel("Waldo"));
-    }
-    
-    topRightLayout.Update(table);
-}
+RenderTable(renderedFilesToShare, topRightLayout1, Path.GetFileName, item => new FileInfo(item).Length.ToHumanReadableSize());
+RenderTable(renderedFoldersToShare, topRightLayout2, Path.GetFileName, item => "~");
 
-
-var rootLayout = new Layout("Root")
+var rootLayout = new Layout()
     .SplitColumns(
         leftLayout,
-        new Layout("Right")
+        new Layout()
             .SplitRows(
                 topRightLayout,
                 bottomRightLayout));
@@ -53,13 +43,13 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
     var server = new CtPointServer();
     var webAppBuilder = server.Create(args);
     webAppBuilder.Logging.ClearProviders()
-        .AddProvider(new CtSpectreConsoleLoggerProvider(LogServerActivity));
+        .AddProvider(new CtLoggerProvider(ConsoleLog));
 
     var webApp = server.Build(webAppBuilder);
     await webApp.RunAsync();
     return;
 
-    void LogServerActivity(LogLevel logLevel, string category, string message)
+    void ConsoleLog(LogLevel logLevel, string category, string message)
     {
         var formattedMessage = CtLoggingExtensions.FormatLogMessage(logLevel, category, message);
         logQueue.Enqueue(formattedMessage);
@@ -82,3 +72,37 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
         ctx.Refresh();
     }
 });
+
+return;
+
+void RenderTable(string[] rows, Layout layout,
+    Func<string, string?> renderName,
+    Func<string, string> renderSize)
+{
+    var table = new Table();
+
+    table.AddColumn("Name");
+    table.AddColumn(new TableColumn("Size").Centered());
+
+    int limit = 4;
+
+    if (rows.Length == 0)
+    {
+        table.AddRow("-", "-");
+    }
+
+    foreach (var item in rows)
+    {
+        if (limit == 0)
+        {
+            table.AddRow("...", "...");
+            table.AddRow($"Total: {rows.Length}", "");
+            break;
+        }
+         
+        table.AddRow(renderName(item) ?? string.Empty, renderSize(item));
+        limit--;
+    }
+    
+    layout.Update(table);
+}
