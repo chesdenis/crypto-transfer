@@ -10,6 +10,27 @@ public static class CtIoExtensions
         var files = Directory.GetFiles(directoryToShare, $"*.{extensionFilter}");
         return files;
     }
+    
+    public static void CreateBlankFile(string filePath, long fileLength)
+    {
+        using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+        fs.SetLength(fileLength);
+    }
+    
+    public static void WriteBytes(string filePath, byte[] partBytes, long offset)
+    {
+        if (partBytes == null)
+            throw new ArgumentNullException(nameof(partBytes));
+        if (offset < 0)
+            throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be a non-negative value.");
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"The specified file does not exist: {filePath}");
+
+        using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Write, FileShare.None);
+        
+        fs.Seek(offset, SeekOrigin.Begin);  
+        fs.Write(partBytes, 0, partBytes.Length);  
+    }
 
     public static IEnumerable<string> GetFoldersToShare(string extensionFilter, string directoryToShare)
     {

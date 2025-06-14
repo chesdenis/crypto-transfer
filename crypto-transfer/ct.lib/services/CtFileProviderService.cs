@@ -6,8 +6,10 @@ namespace ct.lib.services;
 
 public interface ICtFileProviderService
 {
-    Task<Dictionary<string, string>> BuildMapAsync(CtFile fi, string encryptionKey,
+    Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
         long chunkSize = 50 * CtFileProviderService.Mb);
+    
+    Task<string> BuildPartAsync(CtPartRequest request, string encryptionKey);
 }
 
 public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProviderService
@@ -16,11 +18,10 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
     public const long Mb = 1024 * Kb;
     public const long Gb = 1024 * Mb;
 
-    public async Task<Dictionary<string, string>> BuildMapAsync(CtFile fi, string encryptionKey,
+    public async Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
         long chunkSize = 50 * Mb)
     {
         var result = new Dictionary<string, string>();
-        var fileName = Path.GetFileName(fi.FilePath);
 
         await using var fs = File.OpenRead(fi.FilePath);
         var fsLength = fs.Length;
@@ -32,7 +33,7 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
             var offset = i * chunkSize;
 
             var length = Math.Min(chunkSize, fsLength - offset);
-            var partKey = new CtPartKey(fileName, i, totalParts);
+            var partKey = new CtPartKey(fi.FilePath, i, totalParts);
             var partValue = new CtPartValue(
                 FilePath: fi.FilePath,
                 Offset: offset,
@@ -45,6 +46,24 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
             result[encryptedKey] = encryptedValue;
         }
 
-        return result;
+        return new CtFileMap(fi.FilePath, fsLength, result);
+    }
+
+    public async Task<string> BuildPartAsync(CtPartRequest request, string encryptionKey)
+    {
+        await using var fs = File.OpenRead(request.FilePath);
+
+        var length = request.End - request.Start;
+        fs.Seek(request.Start, SeekOrigin.Begin);
+        
+        var buffer = new byte[length];
+        var bytesRead = await fs.ReadAsync(buffer.AsMemory(0, (int)length));
+
+        if (bytesRead < length)
+        {
+            Array.Resize(ref buffer, bytesRead);
+        }
+        var encryptedData = await cryptoService.EncryptBytesAsync(buffer, encryptionKey);
+        return Convert.ToBase64String(encryptedData);
     }
 }

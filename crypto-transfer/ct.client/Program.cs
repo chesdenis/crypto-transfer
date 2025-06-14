@@ -44,22 +44,48 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
     var loggerFactory = LoggerFactory.Create(builder => { builder.AddProvider(new CtLoggerProvider(ConsoleLog)); });
 
     var logger = loggerFactory.CreateLogger<Program>();
-    
+
     var cryptoService = new CtCryptoService(loggerFactory.CreateLogger<CtCryptoService>());
 
     var client = new CtPointClient(args.GetServerUrl());
     var data = await client.InitiateAsync(new CtFile(args.GetTargetFile()));
 
-    var keys = await Task.WhenAll(data.Keys.Select(async s =>
-        await cryptoService.DecryptObjectAsync<CtPartKey>(s, encryptionKey)));
+    var parts = new Dictionary<CtPartKey, CtPartValue>();
 
-    foreach (var key in keys)
+    foreach (var kvp in data.Parts)
     {
-        logger.LogInformation("Processing part {Index} of {Total} for file {FilePath}", key.Index, key.Total, key.FilePath);
+        var key = await cryptoService.DecryptObjectAsync<CtPartKey>(kvp.Key, encryptionKey);
+        var value = await cryptoService.DecryptObjectAsync<CtPartValue>(kvp.Value, encryptionKey);
+        parts.Add(key, value);
+    }
+
+    var fileLength = data.FileLength;
+    var fileName = Path.GetFileName(data.FilePath);
+
+    if (!Path.Exists(fileName))
+    {
+        CtIoExtensions.CreateBlankFile(fileName, fileLength);
+    }
+
+    foreach (var part in parts)
+    {
+        logger.LogInformation("Processing part {Index} of {Total} for file {FilePath}", part.Key.Index, part.Key.Total,
+            part.Key.FilePath);
+
+        var partRequest = new CtPartRequest(
+            part.Key.FilePath, 
+            part.Value.Offset,
+            part.Value.Offset + part.Value.Length);
+        
+        var partContent = await client.DownloadAsync(partRequest);
+        var partContentBytes = Convert.FromBase64String(partContent);
+
+        var decryptedPartContent = await cryptoService.DecryptAsync(partContentBytes, encryptionKey);
+        CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
     }
 
     return;
-    
+
     void ConsoleLog(LogLevel logLevel, string category, string message)
     {
         var formattedMessage = CtLoggingExtensions.FormatLogMessage(logLevel, category, message);

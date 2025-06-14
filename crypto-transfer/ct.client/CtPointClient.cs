@@ -31,7 +31,7 @@ public class CtPointClient
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<Dictionary<string, string>> InitiateAsync(CtFile file)
+    public async Task<CtFileMap> InitiateAsync(CtFile file)
     {
         if (file == null) throw new ArgumentNullException(nameof(file));
 
@@ -39,8 +39,7 @@ public class CtPointClient
         response.EnsureSuccessStatusCode();
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<Dictionary<string, string>>(jsonResponse)
-               ?? new Dictionary<string, string>();
+        return JsonSerializer.Deserialize<CtFileMap>(jsonResponse) ?? throw new InvalidOperationException();
     }
 
     public async Task<string> DownloadAsync(CtPartRequest request)

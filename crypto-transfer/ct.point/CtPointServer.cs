@@ -70,8 +70,10 @@ public class CtPointServer
 
             request = request ?? throw new ArgumentNullException(nameof(request));
 
-            await context.Response.WriteAsync(
-                $"Download received for part: {request.FileKey}, {request.Start}, {request.End}");
+            var fileProvider = context.RequestServices.GetRequiredService<ICtFileProviderService>();
+            var result = await fileProvider.BuildPartAsync(request, encryptionKey);
+            
+            await context.Response.WriteAsync(result);
         });
 
         app.MapPost("/check", async context =>
