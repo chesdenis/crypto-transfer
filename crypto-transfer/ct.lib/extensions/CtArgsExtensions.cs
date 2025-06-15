@@ -2,16 +2,7 @@ using System.Text.Json;
 using ct.lib.model;
 
 namespace ct.lib.extensions;
-
-public static class CtJsonExtensions
-{
-    public static async Task<T?> As<T>(this Stream requestStream) where T : class
-    {
-       return await JsonSerializer.DeserializeAsync<T>(requestStream,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-    }
-}
-
+ 
 public static class CtArgsExtensions
 {
     public static string GetFileExtensionFilter(this string[] args)

@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ct.console.tests", "ct.console.tests\ct.console.tests.csproj", "{4E5AE140-ED1F-4841-94B8-882ACBC15E9D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ct.console", "ct.console\ct.console.csproj", "{D82E340D-11B2-4BE5-B0E5-1AAC3009B546}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ct.lib.tests", "ct.lib.tests\ct.lib.tests.csproj", "{4E5AE140-ED1F-4841-94B8-882ACBC15E9D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ct.point", "ct.point\ct.point.csproj", "{519E6DF3-3B97-4B41-9C7F-ADB05FD47EDE}"
 EndProject
@@ -20,10 +18,6 @@ Global
 		{4E5AE140-ED1F-4841-94B8-882ACBC15E9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E5AE140-ED1F-4841-94B8-882ACBC15E9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E5AE140-ED1F-4841-94B8-882ACBC15E9D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D82E340D-11B2-4BE5-B0E5-1AAC3009B546}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D82E340D-11B2-4BE5-B0E5-1AAC3009B546}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D82E340D-11B2-4BE5-B0E5-1AAC3009B546}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D82E340D-11B2-4BE5-B0E5-1AAC3009B546}.Release|Any CPU.Build.0 = Release|Any CPU
 		{519E6DF3-3B97-4B41-9C7F-ADB05FD47EDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{519E6DF3-3B97-4B41-9C7F-ADB05FD47EDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{519E6DF3-3B97-4B41-9C7F-ADB05FD47EDE}.Release|Any CPU.ActiveCfg = Release|Any CPU

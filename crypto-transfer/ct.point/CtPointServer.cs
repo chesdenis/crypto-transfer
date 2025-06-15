@@ -57,7 +57,10 @@ public class CtPointServer
         // building download map for file and initiate encryption key
         app.MapPost("/initiate", async context =>
         {
-            var request = await context.Request.Body.As<CtFile>();
+            var cryptoService = context.RequestServices.GetRequiredService<ICtCryptoService>();
+            
+            var request = await DecryptAndReadBody<CtFile>(context, cryptoService, encryptionKey);
+            
             var fileProvider = context.RequestServices.GetRequiredService<ICtFileProviderService>();
             var dictionary = await fileProvider.BuildMapAsync(request ?? throw new InvalidOperationException(), encryptionKey);
             
@@ -66,7 +69,9 @@ public class CtPointServer
 
         app.MapPost("/download", async context =>
         {
-            var request = await context.Request.Body.As<CtPartRequest>();
+            var cryptoService = context.RequestServices.GetRequiredService<ICtCryptoService>();
+
+            var request = await DecryptAndReadBody<CtPartRequest>(context, cryptoService, encryptionKey);
 
             request = request ?? throw new ArgumentNullException(nameof(request));
 
@@ -76,16 +81,16 @@ public class CtPointServer
             await context.Response.WriteAsync(result);
         });
 
-        app.MapPost("/check", async context =>
-        {
-            var request = await context.Request.Body.As<CtPartHashRequest>();
-
-            request = request ?? throw new ArgumentNullException(nameof(request));
-
-            await context.Response.WriteAsync(
-                $"Hash request received for part: {request.FileKey}, {request.Start}, {request.End}");
-        });
-
         return app;
+    }
+
+    private static async Task<T?> DecryptAndReadBody<T>(HttpContext context, ICtCryptoService cryptoService, string encryptionKey) where T: class
+    {
+        var requestText = await context.Request.Body.AsEncryptedText();
+        var requestBytes = Convert.FromBase64String(requestText);
+        var decryptedRequest = await cryptoService.DecryptAsync(requestBytes, encryptionKey);
+        var request = JsonSerializer.Deserialize<T>(decryptedRequest);
+        
+        return request;
     }
 }

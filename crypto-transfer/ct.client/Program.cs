@@ -47,7 +47,7 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 
     var cryptoService = new CtCryptoService(loggerFactory.CreateLogger<CtCryptoService>());
 
-    var client = new CtPointClient(args.GetServerUrl());
+    var client = new CtPointClient(args.GetServerUrl(), cryptoService, encryptionKey);
     var data = await client.InitiateAsync(new CtFile(args.GetTargetFile()));
 
     var parts = new Dictionary<CtPartKey, CtPartValue>();
@@ -61,6 +61,8 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 
     var fileLength = data.FileLength;
     var fileName = Path.GetFileName(data.FilePath);
+    topRightLayout1.Update(new Text(fileName));
+    topRightLayout2.Update(new Text($"File size: {fileLength.ToHumanReadableSize()}"));
 
     if (!Path.Exists(fileName))
     {
@@ -82,6 +84,15 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 
         var decryptedPartContent = await cryptoService.DecryptAsync(partContentBytes, encryptionKey);
         CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
+
+        var progress = Math.Round((part.Key.Index+1)*100.0/part.Key.Total, 2);
+        
+        bottomRightLayout.Update(new BarChart()
+            .Width(60)
+            .Label("[green bold underline]Download Progress[/]")
+            .LeftAlignLabel()
+            .AddItem($"Total", 100.0, Color.DarkCyan)
+            .AddItem($"{part.Key.Index+1}/{part.Key.Total}", progress, Color.DarkGreen));
     }
 
     return;

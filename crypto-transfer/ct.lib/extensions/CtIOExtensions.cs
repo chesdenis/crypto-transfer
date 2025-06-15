@@ -5,6 +5,14 @@ namespace ct.lib.extensions;
 
 public static class CtIoExtensions
 {
+    public static async Task<string?> AsEncryptedText(this Stream requestStream)
+    {
+        using var reader = new StreamReader(requestStream);
+        var result = await reader.ReadToEndAsync();
+        result = JsonSerializer.Deserialize<string>(result);
+        return result;
+    }
+    
     public static IEnumerable<string> GetFilesToShare(string extensionFilter, string directoryToShare)
     {
         var files = Directory.GetFiles(directoryToShare, $"*.{extensionFilter}");

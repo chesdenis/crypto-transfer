@@ -1,9 +1,8 @@
-using ct.console.common;
 using ct.lib;
 using ct.lib.extensions;
 using ct.lib.model;
 
-namespace ct.console.tests
+namespace ct.lib.tests
 {
     public class CtArgsExtensionsTests
     {
