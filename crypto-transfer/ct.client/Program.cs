@@ -7,6 +7,7 @@ using ct.lib.model;
 using ct.lib.services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Polly;
 using Spectre.Console;
 
 var configuration = new ConfigurationBuilder()
@@ -69,31 +70,59 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
         CtIoExtensions.CreateBlankFile(fileName, fileLength);
     }
 
-    foreach (var part in parts)
-    {
-        logger.LogInformation("Processing part {Index} of {Total} for file {FilePath}", part.Key.Index, part.Key.Total,
-            part.Key.FilePath);
 
-        var partRequest = new CtPartRequest(
-            part.Key.FilePath, 
-            part.Value.Offset,
-            part.Value.Offset + part.Value.Length);
-        
-        var partContent = await client.DownloadAsync(partRequest);
-        var partContentBytes = Convert.FromBase64String(partContent);
+    await Parallel.ForEachAsync(parts, new ParallelOptions
+        {
+            MaxDegreeOfParallelism = 4
+        },
+        async (part, cancellationToken) =>
+        {
+            logger.LogInformation("Processing part {Index} of {Total} for file {FilePath}", part.Key.Index,
+                part.Key.Total, part.Key.FilePath);
 
-        var decryptedPartContent = await cryptoService.DecryptAsync(partContentBytes, encryptionKey);
-        CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
+            var policy = Policy
+                .Handle<Exception>() 
+                .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential backoff
+                    (exception, timeSpan, retryCount, context) =>
+                    {
+                        // Log each retry attempt
+                        logger.LogWarning($"Attempt {retryCount} failed after {timeSpan}. Retrying...");
+                        logger.LogWarning($"Exception: {exception.Message}");
+                    });
+            
+            string partContent;
+            byte[] partContentBytes = [];
 
-        var progress = Math.Round((part.Key.Index+1)*100.0/part.Key.Total, 2);
-        
-        bottomRightLayout.Update(new BarChart()
-            .Width(60)
-            .Label("[green bold underline]Download Progress[/]")
-            .LeftAlignLabel()
-            .AddItem($"Total", 100.0, Color.DarkCyan)
-            .AddItem($"{part.Key.Index+1}/{part.Key.Total}", progress, Color.DarkGreen));
-    }
+            await policy.ExecuteAsync(async () =>
+            {
+                // Code block to retry
+                var partRequest = new CtPartRequest(
+                    part.Key.FilePath,
+                    part.Value.Offset,
+                    part.Value.Offset + part.Value.Length);
+
+                partContent = await client.DownloadAsync(partRequest);
+                partContentBytes = Convert.FromBase64String(partContent);
+            });
+            
+            var decryptedPartContent = await cryptoService.DecryptAsync(partContentBytes, encryptionKey);
+            lock (fileName) // To ensure thread-safe file writes
+            {
+                CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
+            }
+
+            var progress = Math.Round((part.Key.Index + 1) * 100.0 / part.Key.Total, 2);
+
+            lock (bottomRightLayout) // To ensure thread-safe UI updates
+            {
+                bottomRightLayout.Update(new BarChart()
+                    .Width(60)
+                    .Label("[green bold underline]Download Progress[/]")
+                    .LeftAlignLabel()
+                    .AddItem($"Total", 100.0, Color.DarkCyan)
+                    .AddItem($"{part.Key.Index + 1}/{part.Key.Total}", progress, Color.DarkGreen));
+            }
+        });
 
     return;
 
@@ -120,3 +149,5 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
         ctx.Refresh();
     }
 });
+
+return;
