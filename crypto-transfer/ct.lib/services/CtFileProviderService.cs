@@ -7,7 +7,7 @@ namespace ct.lib.services;
 public interface ICtFileProviderService
 {
     Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
-        long chunkSize = 10 * CtFileProviderService.Mb);
+        long chunkSize = 100 * CtFileProviderService.Mb);
     
     Task<string> BuildPartAsync(CtPartRequest request, string encryptionKey);
 }
@@ -19,7 +19,7 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
     public const long Gb = 1024 * Mb;
 
     public async Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
-        long chunkSize = 10 * Mb)
+        long chunkSize = 100 * Mb)
     {
         var result = new Dictionary<string, string>();
 
