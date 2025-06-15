@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Collections.Concurrent;
 using ct.client;
 using ct.lib.extensions;
 using ct.lib.logging;
@@ -37,7 +38,7 @@ var rootLayout = new Layout()
 
 AnsiConsole.Write(rootLayout);
 
-var logQueue = new Queue<string>();
+var logQueue = new ConcurrentQueue<string>();
 
 
 await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
@@ -133,7 +134,7 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 
         if (logQueue.Count > 10)
         {
-            logQueue.Dequeue();
+            logQueue.TryDequeue(out _);
         }
 
         var combinedLogs = string.Join(Environment.NewLine, logQueue.ToArray());
