@@ -1,5 +1,4 @@
 using System.Text.Json;
-using ct.lib.model;
 
 namespace ct.lib.extensions;
 
@@ -23,6 +22,29 @@ public static class CtIoExtensions
     {
         using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
         fs.SetLength(fileLength);
+    }
+
+    public static async Task<string> ComputeHash(string filePath, long start, long end)
+    {
+        await using var fs = File.OpenRead(filePath);
+        
+        var length = end - start;
+        fs.Seek(start, SeekOrigin.Begin);
+        
+        var buffer = new byte[length];
+        var bytesRead = await fs.ReadAsync(buffer.AsMemory(0, (int)length));
+        
+        if (bytesRead < length)
+        {
+            Array.Resize(ref buffer, bytesRead);
+        }
+        
+        // Compute the hash
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hash = sha256.ComputeHash(buffer);
+
+        // Return the hash as a Base64-encoded string
+        return Convert.ToBase64String(hash);
     }
     
     public static void WriteBytes(string filePath, byte[] partBytes, long offset)
@@ -77,20 +99,5 @@ public static class CtIoExtensions
         double readableSize = byteSize / Math.Pow(1024, sizeIndex);
 
         return $"{readableSize:0.##} {sizeSuffixes[sizeIndex]}";
-    }
-    
-    public static async Task<Dictionary<string, CtPartValue>> LoadChunkMap(this string[] args)
-    {
-        var chunkMapFilePath = args.GetChunkMapPath();
-
-        if (!File.Exists(chunkMapFilePath))
-        {
-            Console.WriteLine($"Chunk map file not found: {chunkMapFilePath}");
-            throw new FileNotFoundException();
-        }
-
-        var chunkMapJson = await File.ReadAllTextAsync(chunkMapFilePath);
-        return JsonSerializer.Deserialize<Dictionary<string, CtPartValue>>(chunkMapJson) ??
-               new Dictionary<string, CtPartValue>();
     }
 }

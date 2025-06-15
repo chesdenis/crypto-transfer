@@ -40,6 +40,7 @@ AnsiConsole.Write(rootLayout);
 
 var logQueue = new ConcurrentQueue<string>();
 
+var fileLock = new object();
 
 await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 {
@@ -70,16 +71,39 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
     {
         CtIoExtensions.CreateBlankFile(fileName, fileLength);
     }
-
-
+    
+    int currentPartIndex = 0;
+    
+    
     await Parallel.ForEachAsync(parts, new ParallelOptions
         {
-            MaxDegreeOfParallelism = 2
+            MaxDegreeOfParallelism = 4
         },
         async (part, cancellationToken) =>
         {
             logger.LogInformation("Processing part {Index} of {Total} for file {FilePath}", part.Key.Index,
                 part.Key.Total, part.Key.FilePath);
+            
+            Interlocked.Increment(ref currentPartIndex);
+
+            var progress = Math.Round((part.Key.Index + 1) * 100.0 / part.Key.Total, 2);
+            
+            var partHashExpected = await client.CheckAsync(new CtPartHashRequest(
+                part.Key.FilePath, 
+                part.Value.Offset, 
+                part.Value.Offset + part.Value.Length)
+            );
+            
+            var partHashCurrent = await CtIoExtensions.ComputeHash(fileName, 
+                part.Value.Offset, 
+                part.Value.Offset + part.Value.Length);
+
+            if (partHashExpected.Equals(partHashCurrent))
+            {
+                logger.LogInformation("Part {Index} of {Total} for file {FilePath} is already downloaded", part.Key.Index,
+                    part.Key.Total, part.Key.FilePath);
+                return;
+            }
 
             var policy = Policy
                 .Handle<Exception>() 
@@ -107,13 +131,11 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
             });
             
             var decryptedPartContent = await cryptoService.DecryptAsync(partContentBytes, encryptionKey);
-            lock (fileName) // To ensure thread-safe file writes
+            lock (fileLock) // To ensure thread-safe file writes
             {
                 CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
             }
-
-            var progress = Math.Round((part.Key.Index + 1) * 100.0 / part.Key.Total, 2);
-
+            
             lock (bottomRightLayout) // To ensure thread-safe UI updates
             {
                 bottomRightLayout.Update(new BarChart()
@@ -152,3 +174,4 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 });
 
 return;
+

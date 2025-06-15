@@ -69,6 +69,17 @@ public class CtPointClient
 
         return await response.Content.ReadAsStringAsync();
     }
+    
+    public async Task<string> CheckAsync(CtPartHashRequest request)
+    {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+        
+        var encryptedBody = await EncryptAsync(request, _cryptoService, _encryptionKey);
+        var response = await _httpClient.PostAsJsonAsync("/check", encryptedBody);
+        response.EnsureSuccessStatusCode();
+        
+        return await response.Content.ReadAsStringAsync();
+    }
 
     private static async Task<string> EncryptAsync<T>(T data, ICtCryptoService cryptoService, string encryptionKey) where T: class
     {

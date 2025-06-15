@@ -1,4 +1,5 @@
 using System.Data.Common;
+using ct.lib.extensions;
 using ct.lib.model;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ public interface ICtFileProviderService
 {
     Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
         long chunkSize = 100 * CtFileProviderService.Mb);
-    
+
     Task<string> BuildPartAsync(CtPartRequest request, string encryptionKey);
     Task<string> BuildHash(CtPartHashRequest request, string encryptionKey);
 }
@@ -56,7 +57,7 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
 
         var length = request.End - request.Start;
         fs.Seek(request.Start, SeekOrigin.Begin);
-        
+
         var buffer = new byte[length];
         var bytesRead = await fs.ReadAsync(buffer.AsMemory(0, (int)length));
 
@@ -64,30 +65,11 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
         {
             Array.Resize(ref buffer, bytesRead);
         }
+
         var encryptedData = await cryptoService.EncryptBytesAsync(buffer, encryptionKey);
         return Convert.ToBase64String(encryptedData);
     }
 
-    public async Task<string> BuildHash(CtPartHashRequest request, string encryptionKey)
-    {
-        await using var fs = File.OpenRead(request.FilePath);
-        
-        var length = request.End - request.Start;
-        fs.Seek(request.Start, SeekOrigin.Begin);
-        
-        var buffer = new byte[length];
-        var bytesRead = await fs.ReadAsync(buffer.AsMemory(0, (int)length));
-        
-        if (bytesRead < length)
-        {
-            Array.Resize(ref buffer, bytesRead);
-        }
-        
-        // Compute the hash
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hash = sha256.ComputeHash(buffer);
-
-        // Return the hash as a Base64-encoded string
-        return Convert.ToBase64String(hash);
-    }
+    public async Task<string> BuildHash(CtPartHashRequest request, string encryptionKey) => 
+        await CtIoExtensions.ComputeHash(request.FilePath, request.Start, request.End);
 }
