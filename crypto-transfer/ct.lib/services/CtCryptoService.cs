@@ -17,8 +17,6 @@ namespace ct.lib.services
     {
         public async Task<byte[]> EncryptBytesAsync(byte[] data, string keyAsString)
         {
-            logger.LogInformation("Encrypting {Length} bytes using provided Base64 key", data.Length);
-
             var key = Convert.FromBase64String(keyAsString);
 
             using var aes = Aes.Create();
@@ -34,7 +32,6 @@ namespace ct.lib.services
             }
 
             var encryptedData = memoryStream.ToArray();
-            logger.LogInformation("Encryption of {Length} bytes completed successfully", data.Length);
 
             return encryptedData;
         }
@@ -63,8 +60,6 @@ namespace ct.lib.services
 
         public async Task<byte[]> DecryptAsync(byte[] data, string keyAsString)
         {
-            logger.LogInformation("Decrypting {Length} bytes using provided Base64 key", data.Length);
-
             var key = Convert.FromBase64String(keyAsString);
 
             using var aes = Aes.Create();
@@ -83,9 +78,7 @@ namespace ct.lib.services
             }
 
             var decryptedData = memoryStream.ToArray();
-
-            logger.LogInformation("Decryption {Length} bytes completed successfully", data.Length);
-
+            
             return decryptedData;
         }
     }

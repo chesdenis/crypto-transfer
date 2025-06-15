@@ -1,3 +1,3 @@
 namespace ct.lib.model;
 
-public record CtPartHashRequest(string FileKey, long Start, long End);
+public record CtPartHashRequest(string FilePath, long Start, long End);

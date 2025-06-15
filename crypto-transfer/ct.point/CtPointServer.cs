@@ -21,7 +21,7 @@ public class CtPointServer
         {
             serverOptions.Limits.MaxConcurrentConnections = null;
             serverOptions.Limits.MaxConcurrentUpgradedConnections = null;
-            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromHours(1);
             serverOptions.Limits.MaxRequestBodySize = null;
             serverOptions.Limits.MinRequestBodyDataRate = null;
             serverOptions.Limits.MinResponseDataRate = null;
@@ -77,6 +77,18 @@ public class CtPointServer
 
             var fileProvider = context.RequestServices.GetRequiredService<ICtFileProviderService>();
             var result = await fileProvider.BuildPartAsync(request, encryptionKey);
+            
+            await context.Response.WriteAsync(result);
+        });
+
+        app.MapPost("/check", async context =>
+        {
+            var cryptoService = context.RequestServices.GetRequiredService<ICtCryptoService>();
+
+            var request = await DecryptAndReadBody<CtPartHashRequest>(context, cryptoService, encryptionKey);
+            request = request ?? throw new ArgumentNullException(nameof(request));
+            var fileProvider = context.RequestServices.GetRequiredService<ICtFileProviderService>();
+            var result = await fileProvider.BuildHash(request, encryptionKey);
             
             await context.Response.WriteAsync(result);
         });

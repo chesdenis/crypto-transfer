@@ -33,7 +33,7 @@ public class CtPointClient
         _httpClient = new HttpClient(handler)
         {
             BaseAddress = new Uri(baseUrl),
-            Timeout = TimeSpan.FromMinutes(10),
+            Timeout = TimeSpan.FromHours(1),
             MaxResponseContentBufferSize = int.MaxValue
         };
     }

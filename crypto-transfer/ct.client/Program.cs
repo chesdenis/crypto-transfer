@@ -74,7 +74,7 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 
     await Parallel.ForEachAsync(parts, new ParallelOptions
         {
-            MaxDegreeOfParallelism = 4
+            MaxDegreeOfParallelism = 2
         },
         async (part, cancellationToken) =>
         {
