@@ -24,10 +24,17 @@ public class CtPointClient
             throw new ArgumentException("Base URL cannot be null or empty.", nameof(baseUrl));
         _cryptoService = cryptoService;
         _encryptionKey = encryptionKey;
-
-        _httpClient = new HttpClient
+        
+        var handler = new HttpClientHandler
         {
-            BaseAddress = new Uri(baseUrl)
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+
+        _httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri(baseUrl),
+            Timeout = TimeSpan.FromMinutes(10),
+            MaxResponseContentBufferSize = int.MaxValue
         };
     }
 

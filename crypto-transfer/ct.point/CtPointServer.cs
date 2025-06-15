@@ -21,17 +21,17 @@ public class CtPointServer
         {
             serverOptions.Limits.MaxConcurrentConnections = null;
             serverOptions.Limits.MaxConcurrentUpgradedConnections = null;
-            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
             serverOptions.Limits.MaxRequestBodySize = null;
             serverOptions.Limits.MinRequestBodyDataRate = null;
             serverOptions.Limits.MinResponseDataRate = null;
             serverOptions.Limits.MaxRequestHeadersTotalSize = 32768; // 32 KB (default is 16 KB)
-            serverOptions.Limits.MaxRequestBufferSize = 2 * 1024 * 1024; // 2 MB
-            serverOptions.Limits.MaxResponseBufferSize = 64 * 1024 * 1024; // 64 MB
+            serverOptions.Limits.MaxRequestBufferSize = null; // 2 MB
+            serverOptions.Limits.MaxResponseBufferSize = null; // 64 MB
 
-            serverOptions.Limits.Http2.MaxStreamsPerConnection = 100; // Increase HTTP/2 streams per connection
-            serverOptions.Limits.Http2.InitialStreamWindowSize = 6 * 1024 * 1024; // 6 MB stream window size
-            serverOptions.Limits.Http2.InitialConnectionWindowSize = 12 * 1024 * 1024; // 12 MB connection window size
+            //serverOptions.Limits.Http2.MaxStreamsPerConnection = 100; // Increase HTTP/2 streams per connection
+            //serverOptions.Limits.Http2.InitialStreamWindowSize = 6 * 1024 * 1024; // 6 MB stream window size
+            //serverOptions.Limits.Http2.InitialConnectionWindowSize = 12 * 1024 * 1024; // 12 MB connection window size
             serverOptions.AddServerHeader = false; // Disable 'Server' header for performance and security
 
             serverOptions.ListenAnyIP(8080);
