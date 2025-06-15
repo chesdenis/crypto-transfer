@@ -86,17 +86,30 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
             
             Interlocked.Increment(ref currentPartIndex);
 
-            var progress = Math.Round((part.Key.Index + 1) * 100.0 / part.Key.Total, 2);
+            var progress = Math.Round((currentPartIndex + 1) * 100.0 / part.Key.Total, 2);
+            lock (bottomRightLayout) // To ensure thread-safe UI updates
+            {
+                bottomRightLayout.Update(new BarChart()
+                    .Width(60)
+                    .Label("[green bold underline]Download Progress[/]")
+                    .LeftAlignLabel()
+                    .AddItem($"Total", 100.0, Color.DarkCyan)
+                    .AddItem($"{currentPartIndex + 1}/{part.Key.Total}", progress, Color.DarkGreen));
+            }
             
             var partHashExpected = await client.CheckAsync(new CtPartHashRequest(
                 part.Key.FilePath, 
                 part.Value.Offset, 
                 part.Value.Offset + part.Value.Length)
             );
-            
-            var partHashCurrent = await CtIoExtensions.ComputeHash(fileName, 
-                part.Value.Offset, 
-                part.Value.Offset + part.Value.Length);
+
+            string partHashCurrent;
+            lock (fileLock) // To ensure thread-safe file writes
+            {
+                partHashCurrent = CtIoExtensions.ComputeHash(fileName,
+                    part.Value.Offset,
+                    part.Value.Offset + part.Value.Length).GetAwaiter().GetResult();
+            }
 
             if (partHashExpected.Equals(partHashCurrent))
             {
@@ -136,15 +149,7 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
                 CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
             }
             
-            lock (bottomRightLayout) // To ensure thread-safe UI updates
-            {
-                bottomRightLayout.Update(new BarChart()
-                    .Width(60)
-                    .Label("[green bold underline]Download Progress[/]")
-                    .LeftAlignLabel()
-                    .AddItem($"Total", 100.0, Color.DarkCyan)
-                    .AddItem($"{part.Key.Index + 1}/{part.Key.Total}", progress, Color.DarkGreen));
-            }
+            
         });
 
     return;
