@@ -101,7 +101,11 @@ void RenderTable(string[] rows, Layout layout,
             break;
         }
          
-        table.AddRow(renderName(item) ?? string.Empty, renderSize(item));
+        var escapedName = Markup.Escape(renderName(item) ?? string.Empty);
+        var escapedSize = Markup.Escape(renderSize(item));
+
+        table.AddRow(escapedName, escapedSize);
+
         limit--;
     }
     
