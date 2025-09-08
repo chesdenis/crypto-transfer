@@ -21,7 +21,7 @@ public class CtFileProviderService(ICtCryptoService cryptoService) : ICtFileProv
     public const long Gb = 1024 * Mb;
 
     public async Task<CtFileMap> BuildMapAsync(CtFile fi, string encryptionKey,
-        long chunkSize = 100 * Mb)
+        long chunkSize = 64 * Mb)
     {
         var result = new Dictionary<string, string>();
 
