@@ -42,16 +42,38 @@ var logQueue = new ConcurrentQueue<string>();
 
 var fileLock = new object();
 
+
+
 await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
 {
     var loggerFactory = LoggerFactory.Create(builder => { builder.AddProvider(new CtLoggerProvider(ConsoleLog)); });
 
     var logger = loggerFactory.CreateLogger<Program>();
+    
+    var policy = Policy
+        .Handle<Exception>() 
+        .WaitAndRetryForeverAsync(x=> TimeSpan.FromSeconds(3), (exception, timeSpan) =>
+        {
+            // Log each retry attempt
+            logger.LogWarning($"Attempt after {timeSpan}. Retrying...");
+            logger.LogWarning($"Exception: {exception.Message}");
+        });
 
     var cryptoService = new CtCryptoService(loggerFactory.CreateLogger<CtCryptoService>());
 
     var client = new CtPointClient(args.GetServerUrl(), cryptoService, encryptionKey);
-    var data = await client.InitiateAsync(new CtFile(args.GetTargetFile()));
+
+    CtFileMap? data = null;
+    
+    await policy.ExecuteAsync(async () =>
+    {
+        data = await client.InitiateAsync(new CtFile(args.GetTargetFile()));
+    });
+
+    if (data == null)
+    {
+        throw new InvalidOperationException("Failed to initiate this transfer due to server returned empty data.");   
+    }
 
     var parts = new Dictionary<CtPartKey, CtPartValue>();
 
@@ -73,15 +95,6 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
     }
     
     int currentPartIndex = 0;
-    
-    var policy = Policy
-        .Handle<Exception>() 
-        .WaitAndRetryForeverAsync(x=> TimeSpan.FromSeconds(3), (exception, timeSpan) =>
-        {
-            // Log each retry attempt
-            logger.LogWarning($"Attempt after {timeSpan}. Retrying...");
-            logger.LogWarning($"Exception: {exception.Message}");
-        });
     
     await Parallel.ForEachAsync(parts, new ParallelOptions
         {
