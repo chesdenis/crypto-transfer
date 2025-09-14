@@ -74,6 +74,14 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
     
     int currentPartIndex = 0;
     
+    var policy = Policy
+        .Handle<Exception>() 
+        .WaitAndRetryForeverAsync(x=> TimeSpan.FromSeconds(3), (exception, timeSpan) =>
+        {
+            // Log each retry attempt
+            logger.LogWarning($"Attempt after {timeSpan}. Retrying...");
+            logger.LogWarning($"Exception: {exception.Message}");
+        });
     
     await Parallel.ForEachAsync(parts, new ParallelOptions
         {
@@ -96,15 +104,19 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
                     .AddItem($"Total", 100.0, Color.DarkCyan)
                     .AddItem($"{currentPartIndex + 1}/{part.Key.Total}", progress, Color.DarkGreen));
             }
-            
-            var partHashExpected = await client.CheckAsync(new CtPartHashRequest(
-                part.Key.FilePath, 
-                part.Value.Offset, 
-                part.Value.Offset + part.Value.Length)
-            );
+
+            string partHashExpected = string.Empty;
+            await policy.ExecuteAsync(async () =>
+            {
+                partHashExpected = await client.CheckAsync(new CtPartHashRequest(
+                    part.Key.FilePath,
+                    part.Value.Offset,
+                    part.Value.Offset + part.Value.Length)
+                );
+            });
 
             string partHashCurrent;
-            lock (fileLock) // To ensure thread-safe file writes
+            lock (fileLock) // To ensure thread-safe file reads
             {
                 partHashCurrent = CtIoExtensions.ComputeHash(fileName,
                     part.Value.Offset,
@@ -117,16 +129,6 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
                     part.Key.Total, part.Key.FilePath);
                 return;
             }
-
-            var policy = Policy
-                .Handle<Exception>() 
-                .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential backoff
-                    (exception, timeSpan, retryCount, context) =>
-                    {
-                        // Log each retry attempt
-                        logger.LogWarning($"Attempt {retryCount} failed after {timeSpan}. Retrying...");
-                        logger.LogWarning($"Exception: {exception.Message}");
-                    });
             
             string partContent;
             byte[] partContentBytes = [];
@@ -148,8 +150,6 @@ await AnsiConsole.Live(rootLayout).StartAsync(async ctx =>
             {
                 CtIoExtensions.WriteBytes(fileName, decryptedPartContent, part.Value.Offset);
             }
-            
-            
         });
 
     return;
