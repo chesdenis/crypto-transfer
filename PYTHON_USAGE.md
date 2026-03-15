@@ -68,7 +68,7 @@ Copy the output and use it for the `--key` argument in both the server and clien
 The server shares files from a specified directory. It uses a base64 encoded encryption key (AES-256 requires 32 bytes after decoding). Upon startup, it displays a list of available files with their indices.
 
 ```bash
-python ct.point.py --dir-to-share <DIRECTORY_PATH> --key <BASE64_KEY> [--port <PORT>] [--file-ext <FILTER>]
+python ct.point.py --dir-to-share <DIRECTORY_PATH> --key <BASE64_KEY> [--port <PORT>] [--file-ext <FILTER>] [--crypto-url <CRYPTO_SERVICE_URL>]
 ```
 
 **Arguments:**
@@ -76,6 +76,7 @@ python ct.point.py --dir-to-share <DIRECTORY_PATH> --key <BASE64_KEY> [--port <P
 - `--key`: (Required) A Base64-encoded AES encryption key. This must match the key used by the client.
 - `--port`: (Optional, default: 8080) The port for the server to listen on.
 - `--file-ext`: (Optional, default: *.*) A file extension filter (e.g., `*.iso`).
+- `--crypto-url`: (Optional) The URL of the `ct.crypto.py` service to offload encryption/decryption tasks (e.g., `http://192.168.1.100:8081`).
 
 **Example:**
 ```bash
@@ -107,6 +108,30 @@ python ct.client.py --server-url <SERVER_URL> --file-index <INDEX> --key <BASE64
 ```bash
 python ct.client.py --server-url http://192.168.1.1:8080 --file-index 0 --key "SG...0" --threads 8
 ```
+
+### 3. Crypto Offloading (ct.crypto.py)
+
+This service allows offloading CPU-intensive encryption and decryption tasks to a more powerful node on the network. It requires the encryption key and content to be provided in each request payload.
+
+```bash
+python ct.crypto.py [--port <PORT>]
+```
+
+**Arguments:**
+- `--port`: (Optional, default: 8081) The port for the service to listen on.
+
+**Endpoints:**
+
+- `POST /encrypt`:
+    - **Payload**: `{"Key": "<BASE64_KEY>", "Content": "<BASE64_PLAINTEXT>"}`
+    - **Returns**: Base64-encoded encrypted data (IV + ciphertext).
+- `POST /decrypt`:
+    - **Payload**: `{"Key": "<BASE64_KEY>", "Content": "<BASE64_CIPHERTEXT>"}`
+    - **Returns**: Raw plaintext bytes.
+- `GET /ping`: Health check. Returns `pong`.
+
+**Offloading Example:**
+A router running `ct.point.py` can delegate the encryption of file chunks to `ct.crypto.py` running on a more capable machine. Both must use the same encryption key for the transfer to be successful.
 
 ## Implementation Notes
 

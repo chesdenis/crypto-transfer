@@ -5,6 +5,7 @@ import hashlib
 import math
 import argparse
 import sys
+import urllib.request
 from typing import Dict, Any
 from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -12,7 +13,9 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
 
 class CtCryptoService:
-    def __init__(self, key_b64: str):
+    def __init__(self, key_b64: str, crypto_url: str = None):
+        self.key_b64 = key_b64
+        self.crypto_url = crypto_url
         try:
             self.key = base64.b64decode(key_b64)
             if len(self.key) not in [16, 24, 32]:
@@ -22,6 +25,18 @@ class CtCryptoService:
             sys.exit(1)
 
     def encrypt_bytes(self, data: bytes) -> bytes:
+        if self.crypto_url:
+            try:
+                content_b64 = base64.b64encode(data).decode('utf-8')
+                payload = {"Key": self.key_b64, "Content": content_b64}
+                req_data = json.dumps(payload).encode('utf-8')
+                req = urllib.request.Request(f"{self.crypto_url.rstrip('/')}/encrypt", data=req_data, headers={'Content-Type': 'application/json'}, method='POST')
+                with urllib.request.urlopen(req) as f:
+                    resp_b64 = f.read()
+                    return base64.b64decode(resp_b64)
+            except Exception as e:
+                print(f"Offloading encryption failed: {e}. Falling back to local encryption.")
+
         iv = os.urandom(16)
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=default_backend())
         encryptor = cipher.encryptor()
@@ -31,6 +46,17 @@ class CtCryptoService:
         return iv + encrypted_data
 
     def decrypt_bytes(self, data: bytes) -> bytes:
+        if self.crypto_url:
+            try:
+                content_b64 = base64.b64encode(data).decode('utf-8')
+                payload = {"Key": self.key_b64, "Content": content_b64}
+                req_data = json.dumps(payload).encode('utf-8')
+                req = urllib.request.Request(f"{self.crypto_url.rstrip('/')}/decrypt", data=req_data, headers={'Content-Type': 'application/json'}, method='POST')
+                with urllib.request.urlopen(req) as f:
+                    return f.read()
+            except Exception as e:
+                print(f"Offloading decryption failed: {e}. Falling back to local decryption.")
+
         iv = data[:16]
         encrypted_data = data[16:]
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=default_backend())
@@ -231,9 +257,10 @@ def main():
     parser.add_argument("--file-ext", default="*.*", help="File extension filter")
     parser.add_argument("--key", required=True, help="Base64 encoded encryption key")
     parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
+    parser.add_argument("--crypto-url", help="URL of the ct.crypto.py offloading service")
     args = parser.parse_args()
 
-    crypto = CtCryptoService(args.key)
+    crypto = CtCryptoService(args.key, args.crypto_url)
     file_provider = CtFileProviderService(crypto)
     shared_files = get_files_to_share(args.dir_to_share, args.file_ext)
 
